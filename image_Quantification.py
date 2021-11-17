@@ -98,6 +98,7 @@ class image_Quantification(object):
 	def Quantification_parameters(self,plot=False):
 		peak=self.res[0];xmin=self.res[1];xmax=self.res[2];xlow1=self.res[3];xlow2=self.res[4];extractedProf=self.res[5];xlow1_total=self.res[7];xlow2_total=self.res[8];
 		PeakWidth=(xlow2-xlow1)/self.im.pas
+
 		# Profile fitting for quantification: 
 		data=extractedProf
 		y=data-np.min(data)
@@ -109,21 +110,31 @@ class image_Quantification(object):
 		xnew = np.arange(0, n-1, 1/5) 				#Multiply by 5 points number
 		ynew = interpolate.splev(xnew, tck, der=0)
 		popt,pcov = curve_fit(gaus,xnew,ynew,p0=[1,mean,sigma])
+		## Std of the gaussian function
 		sigma=popt[2]/self.im.pas
+		## Mean position of gaussian function
 		mean=popt[1]/self.im.pas
 		y_new_fit=gaus(xnew,*popt)
+		## Correlation between fitted data and initial data
 		DataCov=np.cov(ynew,y_new_fit)
 		DataCov=DataCov[0,1]
+		## MSE between fitted data and initial data
 		MSE=np.sqrt(np.sum((ynew-y_new_fit)**2))
 	
-				
+		# Area calculation
 		window=100
 		x_x=np.arange(peak[0],peak[0]+window,1)
 		subdata=self.intentityProfile[peak[0]:peak[0]+window]
-		ydata=np.concatenate((self.intentityProfile[peak[0]:xlow1_total],self.intentityProfile[xlow2_total:peak[0]+window]))
-		xdata=np.concatenate((x_x[:xlow1_total-peak[0]],x_x[xlow2_total-peak[0]:]))
-		tck = interpolate.splrep(xdata, ydata, s=0)
-		ydata_c = interpolate.splev(x_x, tck, der=0)
+		x1=xlow1_total;y1=self.intentityProfile[xlow1_total]
+		x2=xlow2_total;y2=self.intentityProfile[xlow2_total]
+		m=(y1-y2)/(x1-x2);p=y1-m*x1
+		x_lin_interp=np.arange(x1,x2,1)
+		y_lin_interp=m*x_lin_interp+p
+		ydata_c=np.concatenate((self.intentityProfile[peak[0]:xlow1_total],y_lin_interp,self.intentityProfile[xlow2_total:peak[0]+window]))
+		# ydata=np.concatenate((self.intentityProfile[peak[0]:xlow1_total],self.intentityProfile[xlow2_total:peak[0]+window]))
+		# xdata=np.concatenate((x_x[:xlow1_total-peak[0]],x_x[xlow2_total-peak[0]:]))
+		# tck = interpolate.splrep(xdata, ydata, s=0)
+		# ydata_c = interpolate.splev(x_x, tck, der=0)
 		area_exp = np.trapz(ydata_c, dx=1)
 		area_tot = np.trapz(subdata, dx=1)
 		area_ratio = (area_tot-area_exp)/area_tot

@@ -49,10 +49,10 @@ class image_OCT(object):
 		SNR = np.around(10*np.log10(signal/noise),1)
 		return(SNR)
 	
-	def getImage(self,z0=10):
+	def getImage(self,crop,z0=10):
 		self.z0=z0 # [px] coordonnée axiale du démarrage de la détection (10)
 		X = mpimg.imread(self.Path)
-		self.OCT_brut = X[self.z0:, 2:, 0]*1.0             # conversion en float64 en multipliant par 1.0 ([z0:, 2:, 0]*1.0)
+		self.OCT_brut = X[(self.z0):, (2+crop):(-crop), 0]*1.0             # conversion en float64 en multipliant par 1.0 ([z0:, 2:, 0]*1.0)
 		if self.Path_eye == "PachyWide":  
 			self.champ_acquisition_mm= 9 # full = 9mm pour PachyWide
 			self.pas = 4.322                   # [µm] pas axial (!), cf. calibration via pachymetry Optovue
@@ -152,13 +152,13 @@ class image_OCT(object):
 		ProcessedImage = deepcopy(FlattenedImage2/VectNorm)
 		self.OCT_flat=ProcessedImage
 
-	def AutoTreatment(self,plot=False):
+	def AutoTreatment(self,plot=False,crop=100):
 		# if not plot:
 		# 	plt.ioff()
 		# else:
 		# 	plt.ion()
 		try:
-			self.getImage()
+			self.getImage(crop=crop)
 			self.RemoveArrow()
 			self.ExposureCorrection()
 			self.HyperRefelxionRemoval()
