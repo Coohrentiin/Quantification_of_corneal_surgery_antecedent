@@ -192,10 +192,10 @@ class image_Quantification(object):
 			plt.show()
 
 			plt.figure()
-			plt.plot(x_x,subdata,'b',label="initial data A={:.2f}".format(area_tot))
+			plt.plot(x_x,subdata,'b',label="initial data A={:.2f}".format(area_tot),linewidth=2)
 			plt.plot(xlow1_total,self.intentityProfile[xlow1_total],'r+')
 			plt.plot(xlow2_total,self.intentityProfile[xlow2_total],'r+')
-			plt.plot(x_x,ydata_c,'r--',label="croped and interpolated data A={:.2f}".format(area_exp))
+			plt.plot(x_x,ydata_c,'r--',label="croped and interpolated data A={:.2f}".format(area_exp),linewidth=2)
 			plt.title("Area ratio {:.2f}%".format(area_ratio*100))
 			plt.legend()
 			plt.show()
