@@ -15,21 +15,26 @@ def exp_decr(x,k,a,b,l):
 	return(a*exp(-l*(x-k))+b)
 
 class image_Quantification(object):
-	def __init__(self, image_OCT_element,plot=False):
+	def __init__(self, image_OCT_element,plot=False,moving=False):
 		self.im=image_OCT_element
 		# print(type(image_OCT_element))
 		# plt.imshow(image_OCT_element.OCT_flat.transpose(),cmap="gray",aspect="auto")
 		# plt.show()
 		try:
-			self.res=self.Profile_quantification()
-			param=self.Quantification_parameters(plot)
-			self.param=param
-			self.PeakWidth=param[0]
-			self.sigma=param[1]
-			self.DataCov=param[2]
-			self.mean=param[3]
-			self.MSE=param[4]
-			self.area_ratio=param[5]
+			# self.res=self.Profile_quantification()
+			if moving:
+				self.res=self.Profile_quantification_moving()
+				self.parameters=self.Quantification_parameters_moving(plot)
+			else:
+				self.res=self.Profile_quantification()
+				self.parameters=self.Quantification_parameters(plot)
+			# self.param=param
+			# self.PeakWidth=param[0]
+			# self.sigma=param[1]
+			# self.DataCov=param[2]
+			# self.mean=param[3]
+			# self.MSE=param[4]
+			# self.area_ratio=param[5]
 		except:
 			message="\n"+"*"*50+"\n"+"Error in image_Quantification init: Image quantification impossible"
 			raise ValueError(message)
@@ -95,6 +100,46 @@ class image_Quantification(object):
 		extractedProf=self.intentityProfile[xlow1:xlow2+1]
 		return(peak,xmin,xmax,xlow1,xlow2,extractedProf,cropedProfile,xlow1_total,xlow2_total)
 
+	def Profile_quantification_moving(self,displayedPeak=2,window=10,moving_window=50):
+		n,m=self.im.OCT_flat.shape
+		peak=[];xmin=[];xmax=[];xlow1=[];xlow2=[];extractedProf=[];cropedProfile=[];xlow1_total=[];xlow2_total=[];intentityProfile=[]
+		for fcolumn in range(window-1,m-moving_window-window,moving_window):
+			try:
+				sub_image=self.im.OCT_flat[:,fcolumn:(fcolumn+moving_window)]
+				current_intentityProfile=np.mean(sub_image,1)
+			except:
+				message="\n"+"*"*50+"\n"+"Error in image_Quantification Profile quantification: OCT_flat do not exist, run AutoTreatment or Flatenning before Profile_quantification"
+				raise ValueError(message)
+			current_peak=self.getPeaks(current_intentityProfile,displayedPeak)
+			current_xmin=current_peak[0]-window;current_xmax=current_peak[-1]+window
+			current_cropedProfile=current_intentityProfile[current_xmin:current_xmax]
+			current_xlow1,current_xlow2,current_xlow1_total,current_xlow2_total=self.getLowPeak(current_peak,current_cropedProfile,current_xmin)
+			current_extractedProf=current_intentityProfile[current_xlow1:current_xlow2+1]
+
+			peak.append(current_peak)
+			xmin.append(current_xmin)
+			xmax.append(current_xmax)
+			xlow1.append(current_xlow1)
+			xlow2.append(current_xlow2)
+			extractedProf.append(current_extractedProf)
+			cropedProfile.append(current_cropedProfile)
+			xlow1_total.append(current_xlow1_total)
+			xlow2_total.append(current_xlow2_total)
+			intentityProfile.append(current_intentityProfile)
+		# peak=np.mean(peak,axis=0)
+		# xmin=np.mean(xmin,axis=0)
+		# xmax=np.mean(xmax,axis=0)
+		# xlow1=np.mean(xlow1,axis=0)
+		# xlow2=np.mean(xlow2,axis=0)
+		# # print(extractedProf)
+		# extractedProf_list=extractedProf
+		# # print(extractedProf)
+		# cropedProfile_list=cropedProfile
+		# xlow1_total=np.mean(xlow1_total,axis=0)
+		# xlow2_total=np.mean(xlow2_total,axis=0)
+		# intentityProfile=np.mean(intentityProfile,axis=0)
+		return(peak,xmin,xmax,xlow1,xlow2,extractedProf,cropedProfile,xlow1_total,xlow2_total,intentityProfile)
+
 	def Quantification_parameters(self,plot=False):
 		peak=self.res[0];xmin=self.res[1];xmax=self.res[2];xlow1=self.res[3];xlow2=self.res[4];extractedProf=self.res[5];xlow1_total=self.res[7];xlow2_total=self.res[8];
 		PeakWidth=(xlow2-xlow1)/self.im.pas
@@ -154,4 +199,88 @@ class image_Quantification(object):
 			plt.title("Area ratio {:.2f}%".format(area_ratio*100))
 			plt.legend()
 			plt.show()
-		return(PeakWidth,sigma,DataCov,mean,MSE,area_ratio)
+		parameters ={
+			"PeakWidth": PeakWidth,
+			"Sigma": sigma,
+			"DataCov": DataCov,
+			"Mean": mean,
+			"MSE": MSE,
+			"AreaRatio": area_ratio
+		}
+		return(parameters)
+
+	def Quantification_parameters_moving(self,plot=False):
+		peak_list=self.res[0];xmin_list=self.res[1];xmax_list=self.res[2];xlow1_list=self.res[3];xlow2_list=self.res[4];extractedProf_list=self.res[5];xlow1_total_list=self.res[7];xlow2_total_list=self.res[8];intentityProfile_list=self.res[9];
+
+		N=len(peak_list)
+		PeakWidth=0
+		sigma=0
+		mean=0
+		DataCov=0
+		MSE=0
+		area_ratio=0
+		count=0
+		for win in range(N):
+			peak=peak_list[win]
+			xmin=xmin_list[win]
+			xmax=xmax_list[win]
+			xlow1=xlow1_list[win]
+			xlow2=xlow2_list[win]
+			extractedProf=extractedProf_list[win]
+			# cropedProfile=cropedProfile_list[win]
+			xlow1_total=xlow1_total_list[win]
+			xlow2_total=xlow2_total_list[win]
+			intentityProfile=intentityProfile_list[win]
+			PeakWidth+=(xlow2-xlow1)/self.im.pas
+
+			# Profile fitting for quantification: 
+			data=extractedProf
+			y=data-np.min(data)
+			n=y.shape[0]
+			if n>=4: #at least 4 points to describe a gaussian function, splrep have a degree 3 by default (so at least 4 points needed)
+				count+=1
+				x=np.arange(0,n)
+				mean_=np.argmax(y)
+				sigma_=0.1
+				tck = interpolate.splrep(x, y, s=0)
+				xnew = np.arange(0, n-1, 1/5) 				#Multiply by 5 points number
+				ynew = interpolate.splev(xnew, tck, der=0)
+				popt,pcov = curve_fit(gaus,xnew,ynew,p0=[1,mean_,sigma_])
+				## Std of the gaussian function
+				sigma+=popt[2]/self.im.pas
+				## Mean position of gaussian function
+				mean+=popt[1]/self.im.pas
+				y_new_fit=gaus(xnew,*popt)
+				## Correlation between fitted data and initial data
+				DataCov_=np.cov(ynew,y_new_fit)
+				DataCov+=DataCov_[0,1]
+				## MSE between fitted data and initial data
+				MSE+=np.sqrt(np.sum((ynew-y_new_fit)**2))
+
+				# Area calculation
+				window=100
+				x_x=np.arange(peak[0],peak[0]+window,1)
+				subdata=intentityProfile[peak[0]:peak[0]+window]
+				x1=xlow1_total;y1=intentityProfile[xlow1_total]
+				x2=xlow2_total;y2=intentityProfile[xlow2_total]
+				m=(y1-y2)/(x1-x2);p=y1-m*x1
+				x_lin_interp=np.arange(x1,x2,1)
+				y_lin_interp=m*x_lin_interp+p
+				ydata_c=np.concatenate((intentityProfile[peak[0]:xlow1_total],y_lin_interp,intentityProfile[xlow2_total:peak[0]+window]))
+				# ydata=np.concatenate((self.intentityProfile[peak[0]:xlow1_total],self.intentityProfile[xlow2_total:peak[0]+window]))
+				# xdata=np.concatenate((x_x[:xlow1_total-peak[0]],x_x[xlow2_total-peak[0]:]))
+				# tck = interpolate.splrep(xdata, ydata, s=0)
+				# ydata_c = interpolate.splev(x_x, tck, der=0)
+				area_exp = np.trapz(ydata_c, dx=1)
+				area_tot = np.trapz(subdata, dx=1)
+				area_ratio += (area_tot-area_exp)/area_tot
+
+		parameters ={
+			"PeakWidth": PeakWidth/count,
+			"Sigma": sigma/count,
+			"DataCov": DataCov/count,
+			"Mean": mean/count,
+			"MSE": MSE/count,
+			"AreaRatio": area_ratio/count
+		}
+		return(parameters)
