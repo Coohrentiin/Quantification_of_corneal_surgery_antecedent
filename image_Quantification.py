@@ -16,10 +16,17 @@ def exp_decr(x,k,a,b,l):
 
 class image_Quantification(object):
 	def __init__(self, image_OCT_element,plot=False,moving=False):
+		"""[Initialise the creation of the object image_Quantification by computiong the profile and calculate the quantifiers via Profile_quantification(_moving) and Quantification_parameters(_moving)]
+
+		Args:
+			image_OCT_element ([image_OCT]): [object of the class image_OCT]
+			plot (bool, optional): [to rather plot fligure automatically or not]. Defaults to False.
+			moving (bool, optional): [use the moving widow algorithm (True) or on the entire image (False)]. Defaults to False.
+
+		Raises:
+			ValueError: [Error during profile quantification or reation of the parameters]
+		"""
 		self.im=image_OCT_element
-		# print(type(image_OCT_element))
-		# plt.imshow(image_OCT_element.OCT_flat.transpose(),cmap="gray",aspect="auto")
-		# plt.show()
 		try:
 			# self.res=self.Profile_quantification()
 			if moving:
@@ -40,12 +47,29 @@ class image_Quantification(object):
 			raise ValueError(message)
 
 	def getPeaks(self,intentityProfile,displayedPeak=2):
+		"""[Return the #displayedPeak first peak position on the intencity profile in a 1D np-array]
+
+		Args:
+			intentityProfile ([1D np-array]): [Mean axial profile]
+			displayedPeak (int, optional): [# of peaks to detect]. Defaults to 2.
+		"""
 		indexMax=np.argmax(intentityProfile)
 		peak=argrelextrema(intentityProfile, np.greater)
 		npeak1=np.unique(np.where(peak >= indexMax, peak,indexMax)[0])
 		return(npeak1[0:displayedPeak])
 
 	def getLowPeak(self,peak,cropedProfile,xmin):
+		"""[From the position of the second peak of the intensity profile, find the first local hollows in both direction arround the peak.
+  			Hollows are detected by looking for local minimum, in case there is no local min:
+     		- If it is a constant decrease, then lowpeak is define as the last ascan position available on the side studied
+       		A filter is then applied:
+         	The two lowpeaks are selected to have the same distance from the central peak as the minimal distance from the central peak to the two possition of lateral hollows]
+
+		Args:
+			peak ([1D np-array]): [first peaks position on the axial intencity profile]
+			cropedProfile ([type]): [description]
+			xmin ([type]): [description]
+		"""
 		peakLow=argrelextrema(cropedProfile, np.less)+xmin
 		low1=np.unique(np.where(peakLow < peak[1], peakLow,peak[1])[0])#[:-1]
 		if(low1.shape[0]>1):
@@ -85,28 +109,46 @@ class image_Quantification(object):
 		return(xlow1,xlow2,xlow1_total,xlow2_total)
 
 	def Profile_quantification(self,displayedPeak=2,window=10):
+		"""[summary]
+
+		Args:
+			displayedPeak (int, optional): [#of peak to compute]. Defaults to 2.
+			window (int, optional): [number of ascan to consider left to first peak and right to second peak for ploting]. Defaults to 10.
+
+		Raises:
+			ValueError: [Error if the profile can be averaged]
+		"""
 		try:
-			self.intentityProfile=np.mean(self.im.OCT_flat,1)
+			self.intentityProfile=np.mean(self.im.OCT_flat,1)							#Compute the profile
 		except:
 			message="\n"+"*"*50+"\n"+"Error in image_Quantification Profile quantification: OCT_flat do not exist, run AutoTreatment or Flatenning before Profile_quantification"
 			raise ValueError(message)
 		peak=self.getPeaks(self.intentityProfile,displayedPeak)
 
-		xmin=peak[0]-window;xmax=peak[-1]+window
+		xmin=peak[0]-window;xmax=peak[-1]+window										#Select profion of the profile between the two first peak plus a small window (for plot)
 		cropedProfile=self.intentityProfile[xmin:xmax]
-		xlow1,xlow2,xlow1_total,xlow2_total=self.getLowPeak(peak,cropedProfile,xmin)
-		extractedProfile=self.intentityProfile[xlow1:xlow2+1]
+		xlow1,xlow2,xlow1_total,xlow2_total=self.getLowPeak(peak,cropedProfile,xmin) 	#Get the corrected hollow position
+		extractedProfile=self.intentityProfile[xlow1:xlow2+1]							#Profile betwwen hollow for fitting
 		self.extractedProfile=extractedProfile
-		extractedProf=self.intentityProfile[xlow1:xlow2+1]
-		return(peak,xmin,xmax,xlow1,xlow2,extractedProf,cropedProfile,xlow1_total,xlow2_total)
+		return(peak,xmin,xmax,xlow1,xlow2,extractedProfile,cropedProfile,xlow1_total,xlow2_total)
 
 	def Profile_quantification_moving(self,displayedPeak=2,window=10,moving_window=50):
+		"""[summary]
+
+		Args:
+			displayedPeak (int, optional): [#of peak to compute]. Defaults to 2.
+			window (int, optional): [number of ascan to consider left to first peak and right to second peak for ploting]. Defaults to 10.
+			moving_window (int, optional): [window size for quantification]. Defaults to 50.
+
+		Raises:
+			ValueError: [description]
+		"""
 		n,m=self.im.OCT_flat.shape
 		peak=[];xmin=[];xmax=[];xlow1=[];xlow2=[];extractedProf=[];cropedProfile=[];xlow1_total=[];xlow2_total=[];intentityProfile=[]
-		for fcolumn in range(window-1,m-moving_window-window,moving_window):
+		for fcolumn in range(window-1,m-moving_window-window,moving_window):	#For every image fragment
 			try:
-				sub_image=self.im.OCT_flat[:,fcolumn:(fcolumn+moving_window)]
-				current_intentityProfile=np.mean(sub_image,1)
+				sub_image=self.im.OCT_flat[:,fcolumn:(fcolumn+moving_window)]   #Extract fragment 
+				current_intentityProfile=np.mean(sub_image,1)					#Comput the fragment axial intensity profile
 			except:
 				message="\n"+"*"*50+"\n"+"Error in image_Quantification Profile quantification: OCT_flat do not exist, run AutoTreatment or Flatenning before Profile_quantification"
 				raise ValueError(message)
@@ -126,27 +168,18 @@ class image_Quantification(object):
 			xlow1_total.append(current_xlow1_total)
 			xlow2_total.append(current_xlow2_total)
 			intentityProfile.append(current_intentityProfile)
-		# peak=np.mean(peak,axis=0)
-		# xmin=np.mean(xmin,axis=0)
-		# xmax=np.mean(xmax,axis=0)
-		# xlow1=np.mean(xlow1,axis=0)
-		# xlow2=np.mean(xlow2,axis=0)
-		# # print(extractedProf)
-		# extractedProf_list=extractedProf
-		# # print(extractedProf)
-		# cropedProfile_list=cropedProfile
-		# xlow1_total=np.mean(xlow1_total,axis=0)
-		# xlow2_total=np.mean(xlow2_total,axis=0)
-		# intentityProfile=np.mean(intentityProfile,axis=0)
 		return(peak,xmin,xmax,xlow1,xlow2,extractedProf,cropedProfile,xlow1_total,xlow2_total,intentityProfile)
 
 	def Quantification_parameters(self,plot=False):
 		peak=self.res[0];xmin=self.res[1];xmax=self.res[2];xlow1=self.res[3];xlow2=self.res[4];extractedProf=self.res[5];xlow1_total=self.res[7];xlow2_total=self.res[8];
+		### Profile fitting for quantification: 
+  		### ----------------------------------- 
+		## Peak width converted in um
 		PeakWidth=(xlow2-xlow1)/self.im.pas
-
-		# Profile fitting for quantification: 
 		data=extractedProf
-		y=data-np.min(data)
+		# y=data-np.min(data)
+		y=data-( (data[-1]-data[0])/(len(data))*np.arange(0,len(data),1)+data[0] )
+		print(y)
 		n=y.shape[0]
 		x=np.arange(0,n)
 		mean=np.argmax(y)
