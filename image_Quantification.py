@@ -177,9 +177,9 @@ class image_Quantification(object):
 		## Peak width converted in um
 		PeakWidth=(xlow2-xlow1)/self.im.pas
 		data=extractedProf
-		# y=data-np.min(data)
-		y=data-( (data[-1]-data[0])/(len(data))*np.arange(0,len(data),1)+data[0] )
-		print(y)
+		y=data-np.min(data)
+		# y=data-( (data[-1]-data[0])/(len(data))*np.arange(0,len(data),1)+data[0] )
+		# print(y)
 		n=y.shape[0]
 		x=np.arange(0,n)
 		mean=np.argmax(y)
