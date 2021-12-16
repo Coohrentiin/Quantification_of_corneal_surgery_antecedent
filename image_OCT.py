@@ -30,7 +30,7 @@ class image_OCT(object):
 				else:
 					target = 'Line'
 			elif X.shape[1] == 938:
-				target='Corss'
+				target='Cross'
 			elif X.shape[1]==1534:
 				target='PachyWide'
 			else:

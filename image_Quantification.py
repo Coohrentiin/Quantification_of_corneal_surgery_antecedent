@@ -15,7 +15,7 @@ def exp_decr(x,k,a,b,l):
 	return(a*exp(-l*(x-k))+b)
 
 class image_Quantification(object):
-	def __init__(self, image_OCT_element,plot=False,moving=False):
+	def __init__(self, image_OCT_element,plot=False,moving=False,intensity_corr=False):
 		"""[Initialise the creation of the object image_Quantification by computiong the profile and calculate the quantifiers via Profile_quantification(_moving) and Quantification_parameters(_moving)]
 
 		Args:
@@ -34,7 +34,7 @@ class image_Quantification(object):
 				self.parameters=self.Quantification_parameters_moving(plot)
 			else:
 				self.res=self.Profile_quantification()
-				self.parameters=self.Quantification_parameters(plot)
+				self.parameters=self.Quantification_parameters(plot,intensity_corr)
 			# self.param=param
 			# self.PeakWidth=param[0]
 			# self.sigma=param[1]
@@ -170,15 +170,17 @@ class image_Quantification(object):
 			intentityProfile.append(current_intentityProfile)
 		return(peak,xmin,xmax,xlow1,xlow2,extractedProf,cropedProfile,xlow1_total,xlow2_total,intentityProfile)
 
-	def Quantification_parameters(self,plot=False):
+	def Quantification_parameters(self,plot=False,intensity_corr=False):
 		peak=self.res[0];xmin=self.res[1];xmax=self.res[2];xlow1=self.res[3];xlow2=self.res[4];extractedProf=self.res[5];xlow1_total=self.res[7];xlow2_total=self.res[8];
 		### Profile fitting for quantification: 
   		### ----------------------------------- 
 		## Peak width converted in um
 		PeakWidth=(xlow2-xlow1)/self.im.pas
 		data=extractedProf
-		y=data-np.min(data)
-		# y=data-( (data[-1]-data[0])/(len(data))*np.arange(0,len(data),1)+data[0] )
+		if intensity_corr:
+			y=data-( (data[-1]-data[0])/(len(data))*np.arange(0,len(data),1)+data[0] ) # With intensity correction
+		else:		
+  			y=data-np.min(data) # Without intensity correction 
 		# print(y)
 		n=y.shape[0]
 		x=np.arange(0,n)
