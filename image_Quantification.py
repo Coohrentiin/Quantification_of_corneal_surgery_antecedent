@@ -79,7 +79,9 @@ class image_Quantification(object):
 		else:
 			xlow1=low1[0]
 		
-		low2=np.unique(np.where(peakLow >= peak[1], peakLow,peak[1])[0])#[1:]
+		# low2=np.unique(np.where(peakLow >= peak[1], peakLow,peak[1])[0])#[1:]
+		low2=np.where(peakLow >= peak[1], peakLow,peak[1])[0]
+		low2=np.unique(np.where(cropedProfile[low2-xmin] <= cropedProfile[xlow1-xmin], peakLow,peak[1])[0])
 		if(low2.shape[0]>1):
 			xlow2=low2[0]
 			if xlow2==peak[1]:
@@ -181,7 +183,7 @@ class image_Quantification(object):
 			y=data-( (data[-1]-data[0])/(len(data))*np.arange(0,len(data),1)+data[0] ) # With intensity correction
 		else:		
   			y=data-np.min(data) # Without intensity correction 
-		# print(y)
+		print(y)
 		n=y.shape[0]
 		x=np.arange(0,n)
 		mean=np.argmax(y)
