@@ -17,10 +17,12 @@ def exp_decr(x,k,a,b,l):
 class image_Quantification(object):
 	def __init__(self, image_OCT_element,plot=False,moving=False,intensity_corr=False):
 		"""[Initialise the creation of the object image_Quantification by computiong the profile and calculate the quantifiers via Profile_quantification(_moving) and Quantification_parameters(_moving)]
+
 		Args:
 			image_OCT_element ([image_OCT]): [object of the class image_OCT]
 			plot (bool, optional): [to rather plot fligure automatically or not]. Defaults to False.
 			moving (bool, optional): [use the moving widow algorithm (True) or on the entire image (False)]. Defaults to False.
+
 		Raises:
 			ValueError: [Error during profile quantification or reation of the parameters]
 		"""
@@ -46,6 +48,7 @@ class image_Quantification(object):
 
 	def getPeaks(self,intentityProfile,displayedPeak=2):
 		"""[Return the #displayedPeak first peak position on the intencity profile in a 1D np-array]
+
 		Args:
 			intentityProfile ([1D np-array]): [Mean axial profile]
 			displayedPeak (int, optional): [# of peaks to detect]. Defaults to 2.
@@ -61,6 +64,7 @@ class image_Quantification(object):
      		- If it is a constant decrease, then lowpeak is define as the last ascan position available on the side studied
        		A filter is then applied:
          	The two lowpeaks are selected to have the same distance from the central peak as the minimal distance from the central peak to the two possition of lateral hollows]
+
 		Args:
 			peak ([1D np-array]): [first peaks position on the axial intencity profile]
 			cropedProfile ([type]): [description]
@@ -93,24 +97,19 @@ class image_Quantification(object):
 		xlow2_total=xlow2
 		dist1=peak[1]-xlow1
 		dist2=xlow2-peak[1]
-		# dist_avg=int((dist1+dist2)/2)
 		if dist1>dist2:
-			# xlow1=peak[1]-dist_agv
 			xlow1=peak[1]-dist2
 		else:
-			# xlow2=peak[1]+dist_avg
 			xlow2=peak[1]+dist1
-		# if xlow1<0:
-		# 	xlow1=0
-		# if xlow2>cropedProfile.shape[0]+xmin-1:
-		# 	xlow2=cropedProfile.shape[0]+xmin-1
 		return(xlow1,xlow2,xlow1_total,xlow2_total)
 
 	def Profile_quantification(self,displayedPeak=2,window=10):
 		"""[summary]
+
 		Args:
 			displayedPeak (int, optional): [#of peak to compute]. Defaults to 2.
 			window (int, optional): [number of ascan to consider left to first peak and right to second peak for ploting]. Defaults to 10.
+
 		Raises:
 			ValueError: [Error if the profile can be averaged]
 		"""
@@ -121,6 +120,13 @@ class image_Quantification(object):
 			raise ValueError(message)
 		peak=self.getPeaks(self.intentityProfile,displayedPeak)
 
+		# intensity_peak_bowman=self.intentityProfile[peak[1]]
+		# intensity_peak_under_bowman=self.intentityProfile[peak[2]]
+		# self.underBowman=False
+		# if(intensity_peak_bowman<=intensity_peak_under_bowman/0.9):
+		# 	self.underBowman=True
+		# 	# peak=peak[1:]
+
 		xmin=peak[0]-window;xmax=peak[-1]+window										#Select profion of the profile between the two first peak plus a small window (for plot)
 		cropedProfile=self.intentityProfile[xmin:xmax]
 		xlow1,xlow2,xlow1_total,xlow2_total=self.getLowPeak(peak,cropedProfile,xmin) 	#Get the corrected hollow position
@@ -128,12 +134,14 @@ class image_Quantification(object):
 		self.extractedProfile=extractedProfile
 		return(peak,xmin,xmax,xlow1,xlow2,extractedProfile,cropedProfile,xlow1_total,xlow2_total)
 
-	def Profile_quantification_moving(self,displayedPeak=2,window=10,moving_window=50):
+	def Profile_quantification_moving(self,displayedPeak=2,window=10,moving_window=10):
 		"""[summary]
+
 		Args:
 			displayedPeak (int, optional): [#of peak to compute]. Defaults to 2.
 			window (int, optional): [number of ascan to consider left to first peak and right to second peak for ploting]. Defaults to 10.
 			moving_window (int, optional): [window size for quantification]. Defaults to 50.
+
 		Raises:
 			ValueError: [description]
 		"""

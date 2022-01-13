@@ -64,47 +64,40 @@ class image_Quantification_2(object):
 			cropedProfile ([type]): [description]
 			xmin ([type]): [description]
 		"""
-		peakLow=argrelextrema(cropedProfile, np.less)+xmin
-		low1=np.unique(np.where(peakLow < peak[1], peakLow,peak[1])[0])#[:-1]
-		if(low1.shape[0]>1):
+		peakLow=argrelextrema(cropedProfile, np.less)+xmin  #Absolut coordinate of local mins
+		low1=np.unique(np.where(peakLow < peak[1], peakLow,peak[1])[0])  #Get the local mins before the peak (second peak theoricali Bowman)
+		if(low1.shape[0]>1): # Select the last one ie. the one just before the peak
 				xlow1=low1[-1]
 				if xlow1==peak[1]:
 					xlow1=low1[-2]
 		else:
 			xlow1=low1[0]
-		
-		# low2=np.unique(np.where(peakLow >= peak[1], peakLow,peak[1])[0])#[1:]
-		low2=np.where(peakLow >= peak[1], peakLow,peak[1])[0]
-		low2=np.unique(np.where(cropedProfile[low2-xmin] <= cropedProfile[xlow1-xmin], peakLow,peak[1])[0])
-		if(low2.shape[0]>1):
+	
+		low2=np.unique(np.where(peakLow >= peak[1], peakLow,peak[1])[0])  #Get the local mins after the peak (second peak theoricali Bowman)
+		# low2=np.unique(np.where(cropedProfile[low2-xmin] <= cropedProfile[xlow1-xmin], peakLow,peak[1])[0]) #Select the ones such that their intensity is lower then the intensity of the initial local min (low1) (cropedProfile works in relative coordinate)
+		if(low2.shape[0]>1): # Select the first one ie. the one just after the peak
 			xlow2=low2[0]
 			if xlow2==peak[1]:
 				xlow2=low2[1]
 		elif (low2.shape[0]==1):
 			xlow2=low2[0]
-			if xlow2==peak[1]:
+			if xlow2==peak[1]: #If their is not such a lowpeak (min) we select the border (/!\ border of cropedProfile is limited by window in Profile_quantification)
 				xlow2=cropedProfile.shape[0]+xmin-1
 		else:
 			xlow2=cropedProfile.shape[0]+xmin-1
 		
 		xlow1_total=xlow1
 		xlow2_total=xlow2
-		# dist1=peak[1]-xlow1
-		# dist2=xlow2-peak[1]
-		# # dist_avg=int((dist1+dist2)/2)
-		# if dist1>dist2:
-		# 	# xlow1=peak[1]-dist_agv
-		# 	xlow1=peak[1]-dist2
-		# else:
-		# 	# xlow2=peak[1]+dist_avg
-		# 	xlow2=peak[1]+dist1
-		# if xlow1<0:
-		# 	xlow1=0
-		# if xlow2>cropedProfile.shape[0]+xmin-1:
-		# 	xlow2=cropedProfile.shape[0]+xmin-1
+		if not self.underBowman:
+			dist1=peak[1]-xlow1
+			dist2=xlow2-peak[1]
+			if dist1>dist2:
+				xlow1=peak[1]-dist2
+			else:
+				xlow2=peak[1]+dist1
 		return(xlow1,xlow2,xlow1_total,xlow2_total)
 
-	def Profile_quantification(self,displayedPeak=3,window=10):
+	def Profile_quantification(self,displayedPeak=3,window_left=10,window_right=50):
 		"""[summary]
 
 		Args:
@@ -123,13 +116,12 @@ class image_Quantification_2(object):
   
 		intensity_peak_bowman=self.intentityProfile[peak[1]]
 		intensity_peak_under_bowman=self.intentityProfile[peak[2]]
-		# print(intensity_peak_bowman,intensity_peak_under_bowman)
 		self.underBowman=False
-		if(intensity_peak_bowman<=intensity_peak_under_bowman/0.9):
-			# print(self.im.Path_patient,": potential fibrosis under Bowman")
+		if(intensity_peak_bowman<=intensity_peak_under_bowman/0.95):
 			self.underBowman=True
 			peak=peak[1:]
-		xmin=peak[0]-window;xmax=peak[-1]+window										#Select profion of the profile between the two first peak plus a small window (for plot)
+
+		xmin=peak[0]-window_left;xmax=peak[-1]+window_right										#Select profion of the profile between the two first peak plus a small window (for plot)
 		cropedProfile=self.intentityProfile[xmin:xmax]
 		xlow1,xlow2,xlow1_total,xlow2_total=self.getLowPeak(peak,cropedProfile,xmin) 	#Get the corrected hollow position
 		extractedProfile=self.intentityProfile[xlow1:xlow2+1]							#Profile betwwen hollow for fitting
