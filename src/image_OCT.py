@@ -82,7 +82,7 @@ class image_OCT(object):
 		self.der1 = np.diff(self.mean_signal_smooth)
 		self.der1_smooth = sgn.savgol_filter(self.der1,15,2)
 
-	def HyperRefelxionRemoval(self,gauss_sigma=1,der1_seuil=0.67,marge=60): #marge=55
+	def HyperRefelxionRemoval(self,gauss_sigma=1,der1_seuil=0.67,marge=65): #marge=55
 		pas_lat = round(1000*self.champ_acquisition_mm/self.OCT.shape[1],2)  # pas latéral
 		marge = int(np.round(marge/pas_lat))
 		self.Derivative1(gauss_sigma)
