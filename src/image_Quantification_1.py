@@ -177,7 +177,7 @@ class image_Quantification(object):
 		### Profile fitting for quantification: 
   		### ----------------------------------- 
 		## Peak width converted in um
-		PeakWidth=(xlow2-xlow1)/self.im.pas
+		PeakWidth=(xlow2-xlow1)*self.im.pas
 		data=extractedProf
 		if intensity_corr:
 			y=data-( (data[-1]-data[0])/(len(data))*np.arange(0,len(data),1)+data[0] ) # With intensity correction
@@ -193,9 +193,9 @@ class image_Quantification(object):
 		ynew = interpolate.splev(xnew, tck, der=0)
 		popt,pcov = curve_fit(gaus,xnew,ynew,p0=[1,mean,sigma])
 		## Std of the gaussian function
-		sigma=popt[2]/self.im.pas
+		sigma=popt[2]*self.im.pas
 		## Mean position of gaussian function
-		mean=popt[1]/self.im.pas
+		mean=popt[1]*self.im.pas
 		y_new_fit=gaus(xnew,*popt)
 		## Correlation between fitted data and initial data
 		DataCov=np.cov(ynew,y_new_fit)
@@ -268,7 +268,7 @@ class image_Quantification(object):
 			xlow1_total=xlow1_total_list[win]
 			xlow2_total=xlow2_total_list[win]
 			intentityProfile=intentityProfile_list[win]
-			PeakWidth+=(xlow2-xlow1)/self.im.pas
+			PeakWidth+=(xlow2-xlow1)*self.im.pas
 
 			# Profile fitting for quantification: 
 			data=extractedProf
@@ -284,9 +284,9 @@ class image_Quantification(object):
 				ynew = interpolate.splev(xnew, tck, der=0)
 				popt,pcov = curve_fit(gaus,xnew,ynew,p0=[1,mean_,sigma_])
 				## Std of the gaussian function
-				sigma+=popt[2]/self.im.pas
+				sigma+=popt[2]*self.im.pas
 				## Mean position of gaussian function
-				mean+=popt[1]/self.im.pas
+				mean+=popt[1]*self.im.pas
 				y_new_fit=gaus(xnew,*popt)
 				## Correlation between fitted data and initial data
 				DataCov_=np.cov(ynew,y_new_fit)

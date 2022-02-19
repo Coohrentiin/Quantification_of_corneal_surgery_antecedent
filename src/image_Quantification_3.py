@@ -54,6 +54,7 @@ class image_Quantification_3(object):
 			ValueError: [Error during profile quantification or reation of the parameters]
 		"""
 		self.im=image_OCT_element
+		post_window=200
 		if eliminate==0:
 			self.image=self.im.OCT_flat
 		else:
@@ -63,7 +64,21 @@ class image_Quantification_3(object):
 		try:
 			window=100
 			N=self.im.OCT_flat.shape[1]-window
+			self.N=N
 			N_p=N
+			count=0
+			missed=0
+   
+			PeakWidth=0
+			Sigma=0
+			DataCov=0
+			Mean=0
+			MSE=0
+			Area_ratio=0
+			Alpha=0
+			Beta=0
+			IntensityPeak=0
+			profile=0
 			if movingWin:
 				PeakWidth=0;Sigma=0;DataCov=0;Mean=0;MSE=0;Area_ratio=0;Alpha=0;Beta=0;IntensityPeak=0
 				for i in range(N):
@@ -81,8 +96,14 @@ class image_Quantification_3(object):
 						Alpha+=self.Alpha
 						Beta+=self.Beta
 						IntensityPeak+=self.IntensityPeak
+						if (i==0 or (N_p==N-i)):
+							profile=self.iProfileCrop
+						else:
+							profile+=self.iProfileCrop #self.iProfileCrop[1,:]
+						count+=1
 					except:
 						N_p-=1
+						missed+=1
 				self.PeakWidth=PeakWidth/N_p
 				self.Sigma=Sigma/N_p
 				self.DataCov=DataCov/N_p
@@ -103,6 +124,10 @@ class image_Quantification_3(object):
 					"Beta": self.Beta,
 					"IntensityPeak":self.IntensityPeak
 				}
+				self.iProfileCrop=profile
+				self.N_p=N_p
+				self.count=count
+				self.missed=missed
 				# print(str(N_p)+"/"+str(N)+" window computed")
 			else:
 				self.Profile_quantification()
