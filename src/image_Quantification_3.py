@@ -1,4 +1,3 @@
-from src.image_OCT import *
 import numpy as np
 from matplotlib import pyplot as plt
 from scipy import interpolate
@@ -7,6 +6,20 @@ from os import listdir
 from os.path import isfile, join
 import pandas as pd
 
+import matplotlib.image as mpimg
+import scipy.ndimage as img
+import scipy.signal as sgn
+import os.path
+from copy import deepcopy
+from scipy.signal import argrelextrema
+from scipy.optimize import curve_fit
+from scipy import asarray as ar,exp
+
+try:
+    from image_OCT_2 import *
+except:
+    from src.image_OCT_2 import *
+
 def gaus(x,a,x0,sigma):
     	return a*np.exp(-(x-x0)**2/(2*sigma**2))
 
@@ -14,7 +27,9 @@ def exp_decr(x, a, b, c):
     return a * np.exp(-b * x) + c
 
 def create_new_dataset(repository,healthy_value,movingWin=False,eliminate=0,useExpCorr=False):
+	print(">Create dataset from: ",repository)
 	files = [f for f in listdir(repository) if isfile(join(repository, f))]
+	print("		",str(len(files))," files detected")
 	quantification=[]
 	i=0
 	i_list=[]
@@ -22,7 +37,8 @@ def create_new_dataset(repository,healthy_value,movingWin=False,eliminate=0,useE
 		if(f[-3:]=="jpg"):
 			i+=1
 			try:
-				im=image_OCT(os.path.join(repository, f))
+				# im=image_OCT(os.path.join(repository, f))
+				im=image_OCT(repository, f)
 			except:
 				print("Error with: "+f+" image #"+str(i))
 			try:
@@ -57,10 +73,12 @@ class image_Quantification_3(object):
 		post_window=200
 		if eliminate==0:
 			self.image=self.im.OCT_flat
+			self.image_init=self.im.OCT_flat
 		else:
 			width=self.im.OCT_flat.shape[1]
 			to_eliminate=int(width*eliminate/100/2)
 			self.image=self.im.OCT_flat[:,to_eliminate:(width-to_eliminate)]
+			self.image_init=self.im.OCT_flat[:,to_eliminate:(width-to_eliminate)]
 		try:
 			window=100
 			N=self.im.OCT_flat.shape[1]-window
